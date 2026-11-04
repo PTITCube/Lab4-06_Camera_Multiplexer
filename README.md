@@ -1,5 +1,5 @@
-# Lab7-01_Camera_Multiplexer
+# Lab4-06_Camera_Multiplexer
 
-**Chuyển mạch MUX Camera**
+**Chuyển mạch MUX Camera & GPS**
 
-Bài thực hành thuộc Lab7 (Integration) trong hệ thống CubeSat-LMS.
+Bài thực hành thuộc Lab4 (Sensor) trong hệ thống CubeSat-LMS.

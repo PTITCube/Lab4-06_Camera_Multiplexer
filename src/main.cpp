@@ -1,12 +1,17 @@
 /**
- * @file 2_Camera_Multiplexer.cpp
+ * @file Lab4-06_Camera_Multiplexer
  * @brief Ví dụ minh họa cách sử dụng Multiplexer cho ESP32-CAM và GPS.
  * 
  * Mô tả:
- * - Vệ tinh CubeSat PTITCube sử dụng chung giao tiếp (UART) cho cả 
- *   mạch GPS và ESP32-CAM (truyền ảnh UART hoặc kích hoạt phần cứng).
- * - Bằng cách điều khiển các chân `gpsSelectPin` và `camSelectPin`,
+ * - Vệ tinh CubeSat PTITCube sử dụng chung đường UART2 cho cả 
+ *   mạch GPS và ESP32-CAM.
+ * - ESP32-CAM giao tiếp qua UART2 (GPIO 14 TX / GPIO 15 RX).
+ * - Bằng cách điều khiển các chân MUX (gpsSelectPin=12, camSelectPin=14),
  *   ESP32 có thể chọn giao tiếp với GPS hoặc Camera tùy từng thời điểm.
+ * 
+ * Kết nối phần cứng:
+ *   OBC UART2 (GPIO16/17) <--MUX--> GPS UART (9600 baud)
+ *                          <--MUX--> ESP32-CAM UART2 GPIO14/15 (115200 baud)
  */
 
 #include <Arduino.h>
@@ -21,40 +26,42 @@ void setup() {
     delay(2000);
     
     Serial.println("\n--- TEST CHUYỂN MẠCH CAMERA & GPS ---");
+    Serial.println("ESP32-CAM giao tiep qua UART2 (GPIO14-TX, GPIO15-RX)");
+    Serial.println("OBC ket noi qua UART2 (GPIO16-RX, GPIO17-TX) + MUX");
 
     // Khởi tạo Camera (chân select GPS = 12, Camera = 14)
     if (!camera.init(12, 14)) {
-        Serial.println("[Cảnh báo] Camera init có lỗi (Có thể chưa gắn thẻ nhớ).");
+        Serial.println("[Canh bao] Camera init co loi (Co the chua gan the nho).");
     }
 
-    // Khởi tạo GPS
-    gps.init();
+    // Khởi tạo GPS (cùng chân MUX)
+    gps.init(12, 14);
 }
 
 void loop() {
-    Serial.println("\n>>> Chế độ: ƯU TIÊN CAMERA");
+    Serial.println("\n>>> Che do: UU TIEN CAMERA");
     camera.selectCamera(); // Bật kênh giao tiếp cho Camera, tắt GPS
     
     // Đợi một chút để mạch chuyển đổi ổn định
     delay(100); 
 
     if (camera.isReady()) {
-        Serial.println("Chụp ảnh bằng Camera...");
+        Serial.println("Chup anh bang Camera...");
         camera.captureToFile("/photos/multiplexer_test.jpg");
     } else {
-        Serial.println("Camera không sẵn sàng.");
+        Serial.println("Camera khong san sang.");
     }
     
     delay(5000);
 
-    Serial.println("\n>>> Chế độ: ƯU TIÊN GPS");
-    camera.selectGPS(); // Bật kênh giao tiếp cho GPS, tắt Camera
+    Serial.println("\n>>> Che do: UU TIEN GPS");
+    gps.selectGPS(); // Bật kênh giao tiếp cho GPS, tắt Camera
     
     // Đợi một chút để GPS có thể gửi dữ liệu
     delay(1000);
 
     // Đọc dữ liệu từ GPS trong 5 giây
-    Serial.println("Đang đọc dữ liệu GPS...");
+    Serial.println("Dang doc du lieu GPS...");
     unsigned long startTime = millis();
     while (millis() - startTime < 5000) {
         gps.update();
@@ -67,7 +74,7 @@ void loop() {
     }
     
     if (!gps.hasFix()) {
-        Serial.println("GPS chưa chốt được vị trí (No Fix).");
+        Serial.println("GPS chua chot duoc vi tri (No Fix).");
     }
 
     // Đợi một lát trước vòng lặp tiếp theo
